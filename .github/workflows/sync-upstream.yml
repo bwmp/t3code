@@ -1,0 +1,29 @@
+name: Sync fork with upstream
+
+on:
+  schedule:
+    # Every day at 06:00 UTC
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    # Only run on the fork, not on upstream or other forks
+    if: github.repository == 'bwmp/t3code'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge upstream into main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          response=$(gh api "repos/${{ github.repository }}/merge-upstream" \
+            -f branch=main 2>&1) || {
+            echo "::error::Failed to sync with upstream. If this is a merge conflict (HTTP 409), resolve it manually with the 'Sync fork' button or a local merge."
+            echo "$response"
+            exit 1
+          }
+          echo "$response"
